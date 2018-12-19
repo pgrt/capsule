@@ -18,3 +18,4 @@ _site/
 /push_docs.sh
 /copy_blog.sh
 */out/*
+gradle.properties

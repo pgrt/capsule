@@ -7,8 +7,11 @@ buildscript {
         // classpath 'net.saliman:gradle-cobertura-plugin:2.2.4'
         classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.1.1'
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.1.0'
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.12.0"
     }
 }
+
+apply plugin: 'io.codearte.nexus-staging'
 
 allprojects {
     apply plugin: 'com.github.kt3k.coveralls'
@@ -28,24 +31,27 @@ subprojects {
 
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-    group               = "co.paralleluniverse"
-    version             = "1.0.3"
+    group               = "io.nextflow"
+    version             = "1.0.3.1"
     status              = "integration"
-    description         = "Simple Java deployment"
-    ext.url             = "https://github.com/puniverse/capsule"
-    ext.vendor          = "Parallel Universe Software Co."
+    description         = "Java packaging and deployment system"
+    ext.url             = "https://github.com/nextflow-io/capsule"
+    ext.vendor          = "Nextflow.io"
     ext.licenseName     = "Eclipse Public License - v 1.0"
     ext.licenseUrl      = "http://www.eclipse.org/legal/epl-v10.html"
-    ext.scmUrl          = "https://github.com/puniverse/capsule"
-    ext.scmConnection   = "https://github.com/puniverse/capsule.git"
+    ext.scmUrl          = "https://github.com/nextflow-io/capsule"
+    ext.scmConnection   = "https://github.com/nextflow-io/capsule.git"
     ext.distDir         = "$buildDir/dist"
     ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
+    ext.nexusUserName = project.hasProperty('nexusUserName') ? properties.get('nexusUserName') : null
+    ext.nexusPassword = project.hasProperty('nexusPassword') ? properties.get('nexusPassword') : null
+    ext.nexusFullName = project.hasProperty('nexusFullName') ? properties.get('nexusFullName') : null
+    ext.nexusEmail = project.hasProperty('nexusEmail') ? properties.get('nexusEmail') : null
+
     // User and Password are taken from ~/.gradle/gradle.properties
-    if (!project.hasProperty("sonatypeUsername") || !project.hasProperty("sonatypePassword")) {
-        println "sonatype username or password not set"
-        ext.sonatypeUsername = ""
-        ext.sonatypePassword = ""
+    if (!nexusUserName || !nexusPassword) {
+        println "Sonatype username or password not set !"
     }
 
     configurations {
@@ -171,11 +177,12 @@ subprojects {
             mavenDeployer {
                 beforeDeployment { deployment -> signing.signPom(deployment) }
 
-                repository(
-                    url: (isReleaseVersion ?
-                              "https://oss.sonatype.org/service/local/staging/deploy/maven2" :
-                              "https://oss.sonatype.org/content/repositories/snapshots")) {
-                    authentication(userName: sonatypeUsername, password: sonatypePassword)
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: nexusUserName, password: nexusPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: nexusUserName, password: nexusPassword)
                 }
 
                 pom.project {
@@ -197,8 +204,9 @@ subprojects {
                     }
                     developers {
                         developer {
-                            id 'pron'
-                            name 'Ron Pressler'
+                            id nexusUserName
+                            name nexusFullName
+                            email nexusEmail
                         }
                     }
                 }
@@ -257,3 +265,13 @@ coveralls {
     sourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs).files.absolutePath
     jacocoReportPath = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
 }
+
+/*
+ * Configure Nextflow staging plugin
+ * https://github.com/Codearte/gradle-nexus-staging-plugin
+ */
+nexusStaging {
+    packageGroup = 'io.nextflow'
+    delayBetweenRetriesInMillis = 10_000
+}
+
