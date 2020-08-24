@@ -50,10 +50,10 @@ subprojects {
     ext.distDir         = "$buildDir/dist"
     ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
-    ext.nexusUsername = project.hasProperty('nexusUsername') ? properties.get('nexusUsername') : null
-    ext.nexusPassword = project.hasProperty('nexusPassword') ? properties.get('nexusPassword') : null
-    ext.nexusFullName = project.hasProperty('nexusFullName') ? properties.get('nexusFullName') : null
-    ext.nexusEmail = project.hasProperty('nexusEmail') ? properties.get('nexusEmail') : null
+    ext.nexusUsername = project.findProperty('nexusUsername')
+    ext.nexusPassword = project.findProperty('nexusPassword')
+    ext.nexusFullName = project.findProperty('nexusFullName')
+    ext.nexusEmail = project.findProperty('nexusEmail')
 
     // User and Password are taken from ~/.gradle/gradle.properties
     if (!nexusUsername || !nexusPassword) {

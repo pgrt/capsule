@@ -3,7 +3,7 @@ sudo: false
 install: ./gradlew -q assemble
 script: ./gradlew -i check
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 branches:
   except:
