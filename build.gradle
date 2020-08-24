@@ -7,7 +7,7 @@ buildscript {
         // classpath 'net.saliman:gradle-cobertura-plugin:2.2.4'
         classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.1.1'
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.1.0'
-        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.12.0"
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.20.0"
     }
 }
 
@@ -19,6 +19,12 @@ allprojects {
 
     repositories {
         mavenCentral()
+    }
+
+    if (JavaVersion.current().isJava8Compatible()) {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
     }
 }
 
@@ -32,7 +38,7 @@ subprojects {
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     group               = "io.nextflow"
-    version             = "1.0.3.1"
+    version             = "1.1.0"
     status              = "integration"
     description         = "Java packaging and deployment system"
     ext.url             = "https://github.com/nextflow-io/capsule"
@@ -44,13 +50,13 @@ subprojects {
     ext.distDir         = "$buildDir/dist"
     ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
-    ext.nexusUserName = project.hasProperty('nexusUserName') ? properties.get('nexusUserName') : null
+    ext.nexusUsername = project.hasProperty('nexusUsername') ? properties.get('nexusUsername') : null
     ext.nexusPassword = project.hasProperty('nexusPassword') ? properties.get('nexusPassword') : null
     ext.nexusFullName = project.hasProperty('nexusFullName') ? properties.get('nexusFullName') : null
     ext.nexusEmail = project.hasProperty('nexusEmail') ? properties.get('nexusEmail') : null
 
     // User and Password are taken from ~/.gradle/gradle.properties
-    if (!nexusUserName || !nexusPassword) {
+    if (!nexusUsername || !nexusPassword) {
         println "Sonatype username or password not set !"
     }
 
@@ -139,19 +145,21 @@ subprojects {
     //        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     //    }
 
-    task javancss(dependsOn: 'classes') << {
-        ant {
-            logging.level = LogLevel.INFO
-            taskdef(name:'javancss', classname:'javancss.JavancssAntTask', classpath: configurations.javancss.asPath)
-            javancss(
-                srcdir:'src/main/java',
-                abortOnFail:'true',
-                generateReport:'true',
-                packageMetrics:'true',
-                classMetrics:'false',
-                functionMetrics:'false'
-                // outputFile: reportName,
-            )
+    task javancss(dependsOn: 'classes') {
+        doLast {
+            ant {
+                logging.level = LogLevel.INFO
+                taskdef(name:'javancss', classname:'javancss.JavancssAntTask', classpath: configurations.javancss.asPath)
+                javancss(
+                        srcdir:'src/main/java',
+                        abortOnFail:'true',
+                        generateReport:'true',
+                        packageMetrics:'true',
+                        classMetrics:'false',
+                        functionMetrics:'false'
+                        // outputFile: reportName,
+                )
+            }
         }
     }
 
@@ -178,11 +186,11 @@ subprojects {
                 beforeDeployment { deployment -> signing.signPom(deployment) }
 
                 repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: nexusUserName, password: nexusPassword)
+                    authentication(userName: nexusUsername, password: nexusPassword)
                 }
 
                 snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: nexusUserName, password: nexusPassword)
+                    authentication(userName: nexusUsername, password: nexusPassword)
                 }
 
                 pom.project {
@@ -204,7 +212,7 @@ subprojects {
                     }
                     developers {
                         developer {
-                            id nexusUserName
+                            id nexusUsername
                             name nexusFullName
                             email nexusEmail
                         }
@@ -250,14 +258,14 @@ project (':capsule-util') {
 
 task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
     dependsOn = subprojects.test
-    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs)
-    classDirectories =  files(subprojects.sourceSets.main.output)
-    executionData = files(subprojects.jacocoTestReport.executionData)
+//    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs)
+//    classDirectories =  files(subprojects.sourceSets.main.output)
+//    executionData = files(subprojects.jacocoTestReport.executionData)
     reports {
         html.enabled = true
         xml.enabled = true
         csv.enabled = false
-        xml.destination = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+//        xml.destination = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
     }
 }
 
